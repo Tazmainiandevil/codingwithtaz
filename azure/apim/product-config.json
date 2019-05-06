@@ -1,0 +1,80 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "APIManagementInstanceName": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of the API Management instance"
+            }
+        },
+        "ApiProductName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of the product the api should be associated with"
+            }
+        },
+        "ApiProductDisplayName": {
+            "type": "string",
+            "metadata": {
+                "description": "Display Name for the product the api should be associated with"
+            }
+        },
+        "ApiProductDescription": {
+            "type": "string",
+            "metadata": {
+                "description": "The product description"
+            }
+        },
+        "ApiProductTagName": {
+            "type": "string",
+            "metadata": {
+                "description": "The product tag name"
+            }
+        }
+    },
+    "variables": {
+        "apiManagementVersion": "2019-01-01",
+        "approvalRequired": false,
+        "subscriptionRequired": true
+    },
+    "resources": [{
+            "apiVersion": "[variables('apiManagementVersion')]",
+            "type": "Microsoft.ApiManagement/service/products",
+            "name": "[concat(parameters('ApiManagementInstanceName'), '/', parameters('ApiProductName'))]",
+            "dependsOn": [],
+            "properties": {
+                "displayName": "[parameters('ApiProductDisplayName')]",
+                "description": "[parameters('ApiProductDescription')]",
+                "subscriptionRequired": "[variables('subscriptionRequired')]",
+                "approvalRequired": "[variables('approvalRequired')]",
+                "state": "published"
+            },
+            "resources": [{
+                "type": "Microsoft.ApiManagement/service/products/groups",
+                "apiVersion": "[variables('apiManagementVersion')]",
+                "name": "[concat(parameters('ApiManagementInstanceName'), '/',  parameters('ApiProductName'), '/developers')]",
+                "dependsOn": [
+                    "[concat('Microsoft.ApiManagement/service/', parameters('ApiManagementInstanceName'), '/products/', parameters('ApiProductName'))]"
+                ],
+                "properties": {
+                    "displayName": "Developers",
+                    "description": "Developers is a built-in group. Its membership is managed by the system. Signed-in users fall into this group.",
+                    "builtIn": true,
+                    "type": "system"
+                }
+            }]
+        },
+        {
+            "apiVersion": "[variables('apiManagementVersion')]",
+            "type": "Microsoft.ApiManagement/service/tags",
+            "name": "[concat(parameters('APIManagementInstanceName'), '/', parameters('ApiProductName'))]",
+            "dependsOn": [
+                "[concat('Microsoft.ApiManagement/service/', parameters('APIManagementInstanceName'), '/products/', parameters('ApiProductName'))]"
+            ],
+            "properties": {
+                "displayName": "[parameters('ApiProductTagName')]"
+            }
+        }
+    ]
+}

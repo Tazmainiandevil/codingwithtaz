@@ -1,0 +1,30 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "APIManagementInstanceName": {
+            "value": "my-apim-instance"
+        },
+        "OpenApiUrl": {
+            "value": "https://<your web api>/swagger/v1/swagger.json"
+        },
+        "ApiProtocols": {
+            "value": ["HTTPS"]
+        },
+        "ApiProductName": {
+            "value": "my-product"
+        },
+        "ApiName": {
+            "value": "MyAPI"
+        },
+        "ApiPath": {
+            "value": "example"
+        },
+        "ApiProductTagName": {
+            "value": "myProductTag"
+        },
+        "ApiProductTagDisplayName": {
+            "value": "My Product Tag"
+        }
+    }
+}

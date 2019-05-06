@@ -1,0 +1,21 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "APIManagementInstanceName": {
+            "value": "my-apim-instance"
+        },
+        "ApiProductName": {
+            "value": "my-product"
+        },
+        "ApiProductDisplayName": {
+            "value": "My Product"
+        },
+        "ApiProductDescription": {
+            "value": "Test product"
+        },
+        "ApiProductTagName": {
+            "value": "myProductTag"
+        }
+    }
+}

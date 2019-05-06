@@ -1,0 +1,98 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "APIManagementInstanceName": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of the API Management instance"
+            }
+        },
+        "OpenApiUrl": {
+            "type": "string",
+            "metadata": {
+                "description": "This is the URL to the swagger.json entry for your API"
+            }
+        },
+        "ApiProtocols": {
+            "type": "array",
+            "metadata": {
+                "description": "The array of allowed protocols for the API e.g. HTTP, HTTPS"
+            }
+        },
+        "ApiProductName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of the product the api should be associated with"
+            }
+        },
+        "ApiName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of the API entry in APIM"
+            }
+        },
+        "ApiPath": {
+            "type": "string",
+            "metadata": {
+                "description": "The path for the API Url Suffix"
+            }
+        },
+        "ApiProductTagName": {
+            "type": "string",
+            "metadata": {
+                "description": "The product tag name"
+            }
+        },
+        "ApiProductTagDisplayName": {
+            "type": "string",
+            "metadata": {
+                "description": "The product tag display name"
+            }
+        }
+    },
+    "variables": {
+        "apiManagementVersion": "2019-01-01",
+        "subscriptionRequired": true
+    },
+    "resources": [{
+            "apiVersion": "[variables('apiManagementVersion')]",
+            "type": "Microsoft.ApiManagement/service/apis",
+            "name": "[concat(parameters('ApiManagementInstanceName'), '/', parameters('ApiName'))]",
+            "dependsOn": [],
+            "properties": {
+                "format": "swagger-link-json",
+                "value": "[parameters('OpenApiUrl')]",
+                "path": "[parameters('ApiPath')]",
+                "protocols": "[parameters('ApiProtocols')]"
+            }
+        },
+        {
+            "apiVersion": "[variables('apiManagementVersion')]",
+            "type": "Microsoft.ApiManagement/service/products/apis",
+            "name": "[concat(parameters('APIManagementInstanceName'), '/', parameters('ApiProductName'), '/',parameters('ApiName'))]",
+            "dependsOn": [
+                "[concat('Microsoft.ApiManagement/service/', parameters('ApiManagementInstanceName'), '/apis/', parameters('ApiName'))]"
+            ],
+            "properties": {}
+        },
+        {
+            "apiVersion": "[variables('apiManagementVersion')]",
+            "type": "Microsoft.ApiManagement/service/tags",
+            "name": "[concat(parameters('APIManagementInstanceName'), '/', parameters('ApiProductTagName'))]",
+            "dependsOn": [],
+            "properties": {
+                "displayName": "[parameters('ApiProductTagDisplayName')]"
+            }
+        },
+        {
+            "apiVersion": "[variables('apiManagementVersion')]",
+            "type": "Microsoft.ApiManagement/service/apis/tags",
+            "name": "[concat(parameters('APIManagementInstanceName'), '/', parameters('ApiName'), '/', parameters('ApiProductTagName'))]",
+            "dependsOn": [
+                "[concat('Microsoft.ApiManagement/service/', parameters('ApiManagementInstanceName'), '/apis/', parameters('ApiName'))]"
+            ],
+            "properties": {}
+        }
+    ]
+}
