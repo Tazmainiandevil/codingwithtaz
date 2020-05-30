@@ -1,9 +1,9 @@
 ---
 - name: Ansible playbook for creating Infrastructure on Azure
 
-  hosts: localhost
+  hosts: all
   connection: local
-  gather_facts: false
+  gather_facts: true
 
   tasks:  
    - name: "Create Azure Resource Group: {{ storage_resource_group }}"
