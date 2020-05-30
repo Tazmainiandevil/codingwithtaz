@@ -1,7 +1,7 @@
 ---
 - name: Ansible playbook for creating Infrastructure on Azure
 
-  hosts: all
+  hosts: localhost
   connection: local
   gather_facts: true
 
