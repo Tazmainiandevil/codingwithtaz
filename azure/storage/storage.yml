@@ -1,0 +1,19 @@
+---
+- name: Ansible playbook for creating Infrastructure on Azure
+
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:  
+    - name: "Create or Update Azure Storage Account: {{ storage_name }} in Resource Group: {{ storage_resource_group }}"
+      azure_rm_storageaccount:
+        state: present
+        name: "{{ storage_name | mandatory }}"
+        resource_group: "{{ storage_resource_group | mandatory }}"
+        location: "{{ storage_location | mandatory }}"
+        kind: "{{ storage_kind | default('StorageV2') | mandatory }}"
+        account_type: "{{ storage_account_sku | default('Standard_LRS') | mandatory }}"        
+      register: storage_container_result
+      tags: storage
+      
