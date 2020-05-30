@@ -6,7 +6,7 @@
   gather_facts: false
 
   tasks:  
-   - name: "Create Azure Resource Group: {{ resource_group_name }}"
+   - name: "Create Azure Resource Group: {{ storage_resource_group }}"
      azure_rm_resourcegroup:
        state: present
        name: "{{ storage_resource_group }}"
