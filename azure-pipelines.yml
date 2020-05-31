@@ -1,0 +1,34 @@
+# A pipeline with no CI trigger
+trigger: none
+
+# No PR triggers
+pr: none
+
+stages:
+- stage: build_test
+  displayName: Build and Test
+  jobs:
+  - job: build_test
+    pool:
+      vmImage: 'windows-latest' # Currently Windows 2019 and Visual Studio 2019
+    steps:
+    - script: echo Code Built and Tested!
+
+- stage: release
+  displayName: Release
+  dependsOn: build_test
+  jobs:
+   - job: deploy_template
+     pool:
+       vmImage: 'ubuntu-latest' # Currently Ubuntu 18.04
+     steps:
+      - task: AzureResourceManagerTemplateDeployment@3
+        displayName: 'ARM Template deployment: Resource Group scope'
+        inputs:
+          azureResourceManagerConnection: 'Twisters Portal'
+          subscriptionId: $(PortalSubscription)
+          resourceGroupName: $(ResourceGroup)
+          location: $(ResourceGroupLocation)
+          csmFile: './azure/storage/storage.json'
+          csmParametersFile: './azure/storage/storage-parameters.json'
+          overrideParameters: '-StorageName $(storageName)'
