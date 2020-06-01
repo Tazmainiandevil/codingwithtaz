@@ -49,9 +49,19 @@ stages:
       - bash: |
           ansible-playbook ./azure/storage/storage.yml --extra-vars "storage_name=$(storageName) storage_resource_group=$(storageGroup) storage_location=$(storageLocation)"
         displayName: 'Run Playbook Script'
+
+      #- task: Ansible@0
+      #  inputs:
+      #    ansibleInterface: 'agentMachine'
+      #    playbookPathOnAgentMachine: './azure/storage/storage.yml'
+      #    inventoriesAgentMachine: 'noInventory'
+      #    args: '--extra-vars "storage_name=$(storageName) storage_resource_group=$(storageGroup) storage_location=$(storageLocation)"'
+      #    failOnStdErr: false
+
    - job: deploy_build
      dependsOn: deploy_ansible
      pool:
        vmImage: 'windows-latest' # Currently Windows 2019 and Visual Studio 2019
      steps:
       - script: echo Deploying Code
+
