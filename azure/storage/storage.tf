@@ -1,5 +1,5 @@
 terraform {
-  backend "local" {}
+  backend "remote" {}
 }
 
 # Configure the Azure Provider
