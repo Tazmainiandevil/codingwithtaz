@@ -1,0 +1,73 @@
+# A pipeline with no CI trigger
+trigger: none
+
+# No PR triggers
+pr: none
+
+stages:
+- stage: build_test
+  displayName: Build and Test
+  jobs:
+  - job: build_test
+    pool:
+      vmImage: 'windows-latest' # Currently Windows 2019 and Visual Studio 2019
+    steps:
+    - script: echo Code Built and Tested!
+
+- stage: release
+  displayName: Release
+  dependsOn: build_test
+  jobs:
+   - job: deploy_terraform
+     pool:
+       vmImage: 'ubuntu-latest' # Currently Ubuntu 18.04
+     steps:
+      - task: AzureCLI@2
+        displayName: 'Azure CLI '
+        inputs:
+          azureSubscription: 'Twisters Portal'
+          scriptType: bash
+          scriptLocation: inlineScript
+          inlineScript: |
+           az group create --location $(storageLocation) --name $(terraformGroup)
+           az storage account create --name $(terraformStorageName) --resource-group $(terraformGroup) --location $(storageLocation) --sku $(terrformStorageSku)
+           az storage container create --name $(terraformContainerName) --account-name $(terraformStorageName)
+          addSpnToEnvironment: false     
+
+      - task: TerraformInstaller@0
+        displayName: 'Install Terraform 0.12.26'
+        inputs:
+          terraformVersion: 0.12.26
+
+      - task: TerraformTaskV1@0
+        displayName: 'Terraform : Init Azure'
+        inputs:
+          workingDirectory: './azure/storage'
+          backendServiceArm: 'Twisters Portal'
+          backendAzureRmResourceGroupName: $(terraformGroup)
+          backendAzureRmStorageAccountName: $(terraformStorageName)
+          backendAzureRmContainerName: $(terraformContainerName)
+          backendAzureRmKey: $(terraformStateFilename)     
+
+      - task: TerraformTaskV1@0
+        displayName: 'Terraform : Plan'
+        inputs:
+          command: plan
+          workingDirectory: './azure/storage'
+          commandOptions: '-var="resource_group_name=$(storageGroup)" -var="resource_group_location=$(storageLocation)" -var="storage_name=$(storageName)"'
+          environmentServiceNameAzureRM: 'Twisters Portal'
+
+      - task: TerraformTaskV1@0
+        displayName: 'Terraform : Apply'
+        inputs:
+          command: apply
+          workingDirectory: './azure/storage'
+          commandOptions: '-var="resource_group_name=$(storageGroup)" -var="resource_group_location=$(storageLocation)" -var="storage_name=$(storageName)"'
+          environmentServiceNameAzureRM: 'Twisters Portal'
+
+   - job: deploy_build
+     dependsOn: deploy_ansible
+     pool:
+       vmImage: 'windows-latest' # Currently Windows 2019 and Visual Studio 2019
+     steps:
+      - script: echo Deploying Code
