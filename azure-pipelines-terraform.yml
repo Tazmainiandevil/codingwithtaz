@@ -66,7 +66,7 @@ stages:
           environmentServiceNameAzureRM: 'Twisters Portal'
 
    - job: deploy_build
-     dependsOn: deploy_ansible
+     dependsOn: deploy_terraform
      pool:
        vmImage: 'windows-latest' # Currently Windows 2019 and Visual Studio 2019
      steps:
