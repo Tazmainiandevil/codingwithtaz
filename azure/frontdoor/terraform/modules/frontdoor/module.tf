@@ -1,13 +1,8 @@
-# Create a resource group
-resource "azurerm_resource_group" "instance" {
-  name     = var.frontdoor_resource_group_name
-  location = var.frontdoor_resource_group_location
-}
 
 # Create front door
 resource "azurerm_frontdoor" "instance" {
   name                                         = var.frontdoor_name
-  resource_group_name                          = azurerm_resource_group.instance.name
+  resource_group_name                          = var.frontdoor_resource_group_name
   enforce_backend_pools_certificate_name_check = var.enforce_backend_pools_certificate_name_check
   load_balancer_enabled                        = var.frontdoor_loadbalancer_enabled
   backend_pools_send_receive_timeout_seconds   = var.backend_pools_send_receive_timeout_seconds
@@ -28,8 +23,8 @@ resource "azurerm_frontdoor" "instance" {
     content {
         name               = routing_rule.value.name
         accepted_protocols = routing_rule.value.accepted_protocols
-        patterns_to_match  = routing_rule.value.patterns_to_match
-        frontend_endpoints = routing_rule.value.frontend_endpoints
+        patterns_to_match  = routing_rule.value.patterns_to_match        
+        frontend_endpoints = values({for x, endpoint in var.frontend_endpoint : x => endpoint.name})
         dynamic "forwarding_configuration" {
           for_each = routing_rule.value.configuration == "Forwarding" ? routing_rule.value.forwarding_configuration : []
           content {
@@ -89,14 +84,20 @@ resource "azurerm_frontdoor" "instance" {
     }
   }
 
-  frontend_endpoint {
-    name                              = "${var.frontdoor_name}FrontendEndpoint"
-    host_name                         = "${var.frontdoor_name}.azurefd.net"
-    custom_https_provisioning_enabled = var.custom_https_provisioning_enabled    
-    dynamic custom_https_configuration {
-      for_each = var.custom_https_provisioning_enabled == false ? [] : list(var.custom_https_configuration.certificate_source)
-      content {
-        certificate_source = custom_https_configuration.value.certificate_source
+  dynamic "frontend_endpoint" {
+    for_each = var.frontend_endpoint
+    content {
+      name                                    = frontend_endpoint.value.name
+      host_name                               = frontend_endpoint.value.host_name
+      custom_https_provisioning_enabled       = frontend_endpoint.value.custom_https_provisioning_enabled    
+      session_affinity_enabled                = frontend_endpoint.value.session_affinity_enabled
+      session_affinity_ttl_seconds            = frontend_endpoint.value.session_affinity_ttl_seconds
+      web_application_firewall_policy_link_id = frontend_endpoint.value.waf_policy_link_id
+      dynamic "custom_https_configuration" {
+        for_each = frontend_endpoint.value.custom_https_provisioning_enabled == false ? [] : list(frontend_endpoint.value.custom_https_configuration.certificate_source)
+        content {
+          certificate_source = custom_https_configuration.value.certificate_source
+        }
       }
     }
   }
