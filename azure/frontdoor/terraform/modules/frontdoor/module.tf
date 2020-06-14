@@ -1,4 +1,3 @@
-
 # Create front door
 resource "azurerm_frontdoor" "instance" {
   name                                         = var.frontdoor_name
