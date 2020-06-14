@@ -14,6 +14,7 @@ resource "azurerm_resource_group" "instance" {
   location = "westeurope"
 }
 
+# Create Front Door
 module "front-door" {
   source                                            = "./modules/frontdoor"    
   tags                                              = { Department = "Ops"}
@@ -45,15 +46,7 @@ module "front-door" {
         cache_query_parameter_strip_directive = "StripNone" 
         custom_forwarding_path                = ""
         forwarding_protocol                   = "MatchRequest"   
-      }]
-      redirect_configuration = [{
-          custom_host         = ""             
-          redirect_protocol   = "MatchRequest"   
-          redirect_type       = "Found"        
-          custom_fragment     = ""
-          custom_path         = ""
-          custom_query_string = ""
-      }]
+      }]      
   }]
 
   frontdoor_loadbalancer =  [{      
