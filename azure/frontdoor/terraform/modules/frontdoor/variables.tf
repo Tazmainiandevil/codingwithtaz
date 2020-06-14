@@ -31,82 +31,20 @@ variable "tags" {
 
 variable "frontend_endpoint" {
   description = "(Required) Frontend Endpoints for Azure Front Door"
-  type = list(object({
-    name                                    = string
-    host_name                               = string
-    custom_https_provisioning_enabled       = bool
-    session_affinity_enabled                = bool
-    session_affinity_ttl_seconds            = number
-    waf_policy_link_id                      = string
-    custom_https_configuration = object({
-      certificate_source = string    
-    })
-  }))
 }
 
 variable "frontdoor_routing_rule" {
   description = "(Required) Routing rules for Azure Front Door"
-  type = list(object({
-    name                                    = string    
-    accepted_protocols = list(string)
-    patterns_to_match  = list(string)
-    enabled            = bool
-    configuration      = string
-    forwarding_configuration = list(object({
-      backend_pool_name                     = string
-      cache_enabled                         = bool
-      cache_use_dynamic_compression         = bool           
-      cache_query_parameter_strip_directive = string
-      custom_forwarding_path                = string
-      forwarding_protocol                   = string
-    }))    
-    redirect_configuration = list(object({
-      custom_host           = string
-      redirect_protocol     = string
-      redirect_type         = string
-      custom_fragment       = string
-      custom_path           = string
-      custom_query_string   = string
-    }))
-  }))  
 }
 
 variable "frontdoor_loadbalancer" {
   description = "(Required) Load Balancer settings for Azure Front Door"
-  type = list(object({
-        name                            = string
-        sample_size                     = number
-        successful_samples_required     = number
-        additional_latency_milliseconds = number
-  }))
 }
 
 variable "frontdoor_health_probe" {
   description = "(Required) Health Probe settings for Azure Front Door"
-  type = list(object({
-          name                = string
-          enabled             = bool
-          path                = string
-          protocol            = string
-          probe_method        = string    
-          interval_in_seconds = number            
-  }))
 }
 
 variable "frontdoor_backend" {
   description = "(Required) Backend settings for Azure Front Door"
-  type = list(object({
-      name               = string
-      loadbalancing_name = string
-      health_probe_name  = string
-      backend = list(object({
-        enabled     = bool
-        host_header = string
-        address     = string
-        http_port   = number
-        https_port  = number
-        priority    = number
-        weight      = number
-      }))
-    }))
 }
