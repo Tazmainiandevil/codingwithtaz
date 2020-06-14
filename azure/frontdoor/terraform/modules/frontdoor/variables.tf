@@ -2,10 +2,6 @@ variable "frontdoor_resource_group_name" {
   description = "(Required) Resource Group name"
   type = string
 }
-variable "frontdoor_resource_group_location" {
-  description = "(Required) Resource Group location"
-  type = string
-}
 
 variable "frontdoor_name" {
   description = "(Required) Name of the Azure Front Door to create"
@@ -29,27 +25,29 @@ variable "backend_pools_send_receive_timeout_seconds" {
   default = 60
 }
 
-variable "custom_https_provisioning_enabled" {
-  description = "(Required) Custom HTTPS provising enabled for Azure Front Door"
-  type = bool
-}
-
-variable "custom_https_configuration" {
-  description = "(Required) Custom HTTPS configuration for Azure Front Door"
-  type = object({
-    certificate_source = string    
-  })
-}
-
 variable "tags" {
   description = "(Required) Tags for Azure Front Door"  
+}
+
+variable "frontend_endpoint" {
+  description = "(Required) Frontend Endpoints for Azure Front Door"
+  type = list(object({
+    name                                    = string
+    host_name                               = string
+    custom_https_provisioning_enabled       = bool
+    session_affinity_enabled                = bool
+    session_affinity_ttl_seconds            = number
+    waf_policy_link_id                      = string
+    custom_https_configuration = object({
+      certificate_source = string    
+    })
+  }))
 }
 
 variable "frontdoor_routing_rule" {
   description = "(Required) Routing rules for Azure Front Door"
   type = list(object({
-    name = string
-    frontend_endpoints = list(string)
+    name                                    = string    
     accepted_protocols = list(string)
     patterns_to_match  = list(string)
     enabled            = bool
