@@ -1,0 +1,100 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "siteName": {
+            "type": "string",
+            "metadata": {
+                "description": "The unique name of your Web Site."
+            }
+        },
+        "appImageName": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of the container image for this web app"
+            }
+        },
+        "containerRegistryName": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of the azure container registry that contains the webapp"
+            }
+        },
+        "containerRegistryUserName": {
+            "type": "string",
+            "metadata": {
+                "description": "The user name to access the azure container registry"
+            }
+        },
+        "containerRegistryPassword": {
+            "type": "string",
+            "metadata": {
+                "description": "The password to access the azure container registry"
+            }
+        }
+
+    },
+    "variables": {
+        "hostingPlanName": "[concat('hpn-',  parameters('siteName'))]",
+        "siteApiVersion": "2019-08-01"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Web/serverfarms",
+            "apiVersion": "[variables('siteApiVersion')]",
+            "name": "[variables('hostingPlanName')]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "name": "[variables('hostingPlanName')]",
+                "workerSizeId": "1",
+                "reserved": true,
+                "numberOfWorkers": "1"
+            },
+            "sku": {
+                "Tier": "Standard",
+                "Name": "S1"
+            },
+            "kind": "linux"
+        },
+        {
+            "name": "[parameters('siteName')]",
+            "type": "Microsoft.Web/sites",
+            "apiVersion": "[variables('siteApiVersion')]",
+            "kind": "app,linux,container",
+            "location": "[resourceGroup().location]",
+            "tags": {
+                "hostingPlan": "[variables('hostingPlanName')]",
+                "displayName": "[parameters('siteName')]"
+            },
+            "dependsOn": [
+                "[variables('hostingPlanName')]"
+            ],
+            "properties": {
+                "name": "[parameters('siteName')]",
+                "serverFarmId": "[variables('hostingPlanName')]",
+                "siteConfig": {
+                    "use32BitWorkerProcess": false,
+                    "http20Enabled": true,
+                    "minTlsVersion": "1.2",
+                    "alwaysOn": true,
+                    "linuxFxVersion": "[concat('DOCKER|', parameters('appImageName'))]",
+                    "appSettings": [
+                        {
+                            "name": "DOCKER_REGISTRY_SERVER_USERNAME",
+                            "value": "[parameters('containerRegistryUserName')]"
+                        },
+                        {
+                            "name": "DOCKER_REGISTRY_SERVER_URL",
+                            "value": "[concat('https://',parameters('containerRegistryName'))]"
+                        },
+                        {
+                            "name": "DOCKER_REGISTRY_SERVER_PASSWORD",
+                            "value": "[parameters('containerRegistryPassword')]"
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "outputs": {}
+}

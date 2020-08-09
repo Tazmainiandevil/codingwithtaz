@@ -1,0 +1,98 @@
+trigger:
+- master
+
+resources:
+- repo: self
+
+variables:  
+  imageRepository: 'multistagepipelines'   
+  tag: '$(Build.BuildId)' 
+  vmImageName: 'ubuntu-latest'
+  vmWindowsImageName: 'windows-latest'
+  uiTestFolder: 'uitests'
+
+stages:
+- stage: Build
+  displayName: Build and push stage
+  jobs:  
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: $(vmImageName)  
+    steps:
+      - task: Docker@2
+        displayName: Build and push an image to container registry
+        inputs:
+          containerRegistry: 'ACR Connection'
+          repository: '$(imageRepository)'
+          command: 'buildAndPush'
+          Dockerfile: '**/Dockerfile'
+          tags: |
+            latest
+            $(tag)
+      - task: PublishBuildArtifacts@1
+        displayName: Publish ARM template
+        inputs:
+          PathtoPublish: 'deploy.json'
+          ArtifactName: 'template'
+          publishLocation: 'Container'
+  - job: BuildTests
+    displayName: Build UI Tests
+    pool:
+      vmImage: $(vmWindowsImageName)
+    steps:
+      - task: DotNetCoreCLI@2
+        displayName: Restore Packages
+        inputs:
+          command: 'restore'
+          projects: 'multistagepipelinestests/*.csproj'
+      - task: DotNetCoreCLI@2
+        displayName: Build Tests
+        inputs:
+          command: 'build'
+          projects: '**/multistagepipelinestests.csproj'
+          arguments: '--configuration Release -o $(Build.ArtifactStagingDirectory)/uitests'
+      - task: PublishBuildArtifacts@1
+        displayName: Publish UI Tests
+        inputs:
+          PathtoPublish: '$(Build.ArtifactStagingDirectory)/$(uiTestFolder)'
+          ArtifactName: $(uiTestFolder)
+          publishLocation: 'Container'
+- stage: Staging
+  displayName: Deploy to Staging
+  jobs:
+  - deployment: DeployWeb
+    displayName: Deploy Web App
+    pool:
+     vmImage: $(vmWindowsImageName)
+    environment: Staging
+    variables:
+      siteName: staging-taz-app
+      siteResourceGroup: stag-taz-webapp
+      siteLocation: UK South
+      appImageName: $(containerRegistryName)/$(imageRepository):latest
+      baseSiteUrl: 'https://$(siteName).azurewebsites.net/'
+    strategy:
+      runOnce:       
+        deploy:
+          steps:
+          - template: web-deploy-steps.yml
+- stage: Production
+  displayName: Deploy to Production
+  jobs:
+  - deployment: DeployWeb
+    displayName: Deploy Web App
+    pool:
+     vmImage: $(vmWindowsImageName)
+    environment: Production
+    variables:
+      siteName: production-taz-app
+      siteResourceGroup: prod-taz-webapp
+      siteLocation: UK South
+      appImageName: $(containerRegistryName)/$(imageRepository):latest
+      baseSiteUrl: 'https://$(siteName).azurewebsites.net/'
+    strategy:
+      runOnce:       
+        deploy:
+          steps:
+          - template: web-deploy-steps.yml

@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29806.167
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "multistagepipelines", "multistagepipelines\multistagepipelines.csproj", "{32E24AC9-37CB-4440-BD6B-D3B99E0691A1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "multistagepipelinestests", "multistagepipelinestests\multistagepipelinestests.csproj", "{AA3E427C-3CDF-450F-839E-CF6842F3B403}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{32E24AC9-37CB-4440-BD6B-D3B99E0691A1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{32E24AC9-37CB-4440-BD6B-D3B99E0691A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{32E24AC9-37CB-4440-BD6B-D3B99E0691A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{32E24AC9-37CB-4440-BD6B-D3B99E0691A1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AA3E427C-3CDF-450F-839E-CF6842F3B403}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AA3E427C-3CDF-450F-839E-CF6842F3B403}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AA3E427C-3CDF-450F-839E-CF6842F3B403}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AA3E427C-3CDF-450F-839E-CF6842F3B403}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A6C72D8C-903B-4508-A8BD-C6448CC366F0}
+	EndGlobalSection
+EndGlobal

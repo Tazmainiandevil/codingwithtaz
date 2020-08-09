@@ -1,0 +1,42 @@
+steps:
+- task: AzureResourceManagerTemplateDeployment@3
+  displayName: Create or Update Azure Web App
+  inputs:
+    deploymentScope: 'Resource Group'
+    azureResourceManagerConnection: $(SubscriptionName)
+    subscriptionId: $(subscriptionId)
+    action: 'Create Or Update Resource Group'
+    resourceGroupName: $(siteResourceGroup)
+    location: $(siteLocation)
+    templateLocation: 'Linked artifact'
+    csmFile: '$(Pipeline.Workspace)/template/deploy.json'
+    overrideParameters: '-siteName $(siteName) -appImageName $(appImageName) -containerRegistryName $(containerRegistryName) -containerRegistryUserName $(containerRegistryUserName) -containerRegistryPassword $(containerRegistryPassword)'
+    deploymentMode: 'Incremental'
+- task: AzureWebAppContainer@1
+  displayName: Deploy Application
+  inputs:
+    azureSubscription: $(SubscriptionName)
+    appName: '$(siteName)'
+    containers: '$(appImageName)'
+- task: FileTransform@2
+  displayName: Configure Staging
+  inputs:
+    folderPath: '$(Pipeline.Workspace)'
+    xmlTransformationRules: ''
+    jsonTargetFiles: '**/*settings.json'
+- task: PowerShell@2
+  inputs:
+    targetType: 'inline'
+    script: 'Get-Content -Path $(Pipeline.Workspace)/$(uiTestFolder)/testsettings.json'
+    pwsh: true
+- task: VSTest@2
+  displayName: Run UI Tests
+  inputs:
+    testSelector: 'testAssemblies'
+    testAssemblyVer2: |
+      **\*tests.dll
+      !**\*TestAdapter.dll
+      !**\obj\**
+    searchFolder: '$(Pipeline.Workspace)/$(uiTestFolder)'
+    uiTests: true
+    testRunTitle: 'Basic UI Tests'
