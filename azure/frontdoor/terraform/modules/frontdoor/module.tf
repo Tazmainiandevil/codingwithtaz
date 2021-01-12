@@ -95,7 +95,7 @@ resource "azurerm_frontdoor" "instance" {
       dynamic "custom_https_configuration" {
         for_each = frontend_endpoint.value.custom_https_provisioning_enabled == false ? [] : list(frontend_endpoint.value.custom_https_configuration.certificate_source)
         content {
-          certificate_source = custom_https_configuration.value.certificate_source
+          certificate_source = frontend_endpoint.value.custom_https_configuration.certificate_source
         }
       }
     }
