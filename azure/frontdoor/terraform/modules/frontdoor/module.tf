@@ -13,7 +13,7 @@ resource "azurerm_frontdoor" "instance" {
       name                            = backend_pool_load_balancing.value.name
       sample_size                     = backend_pool_load_balancing.value.sample_size
       successful_samples_required     = backend_pool_load_balancing.value.successful_samples_required
-      additional_latency_milliseconds = backend_pool_load_balancing.value.successful_samples_required
+      additional_latency_milliseconds = backend_pool_load_balancing.value.additional_latency_milliseconds
     }
   }
 
@@ -22,13 +22,13 @@ resource "azurerm_frontdoor" "instance" {
     content {
         name               = routing_rule.value.name
         accepted_protocols = routing_rule.value.accepted_protocols
-        patterns_to_match  = routing_rule.value.patterns_to_match        
+        patterns_to_match  = routing_rule.value.patterns_to_match
         frontend_endpoints = values({for x, endpoint in var.frontend_endpoint : x => endpoint.name})
         dynamic "forwarding_configuration" {
           for_each = routing_rule.value.configuration == "Forwarding" ? routing_rule.value.forwarding_configuration : []
           content {
             backend_pool_name                     = forwarding_configuration.value.backend_pool_name
-            cache_enabled                         = forwarding_configuration.value.cache_enabled                           
+            cache_enabled                         = forwarding_configuration.value.cache_enabled
             cache_use_dynamic_compression         = forwarding_configuration.value.cache_use_dynamic_compression #default: false
             cache_query_parameter_strip_directive = forwarding_configuration.value.cache_query_parameter_strip_directive
             custom_forwarding_path                = forwarding_configuration.value.custom_forwarding_path
@@ -58,13 +58,13 @@ resource "azurerm_frontdoor" "instance" {
       protocol            = backend_pool_health_probe.value.protocol
       probe_method        = backend_pool_health_probe.value.probe_method
       interval_in_seconds = backend_pool_health_probe.value.interval_in_seconds
-    }  
+    }
   }
 
   dynamic "backend_pool" {
     for_each = var.frontdoor_backend
     content {
-       name                = backend_pool.value.name      
+       name                = backend_pool.value.name
        load_balancing_name = backend_pool.value.loadbalancing_name
        health_probe_name   = backend_pool.value.health_probe_name
 
@@ -88,7 +88,7 @@ resource "azurerm_frontdoor" "instance" {
     content {
       name                                    = frontend_endpoint.value.name
       host_name                               = frontend_endpoint.value.host_name
-      custom_https_provisioning_enabled       = frontend_endpoint.value.custom_https_provisioning_enabled    
+      custom_https_provisioning_enabled       = frontend_endpoint.value.custom_https_provisioning_enabled
       session_affinity_enabled                = frontend_endpoint.value.session_affinity_enabled
       session_affinity_ttl_seconds            = frontend_endpoint.value.session_affinity_ttl_seconds
       web_application_firewall_policy_link_id = frontend_endpoint.value.waf_policy_link_id
