@@ -1,0 +1,48 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "tags": {
+            "value": {
+                "project": "mjdemo",
+                "resource": "AKS"
+            }
+        },
+        "prefix": {
+            "value": "dev"
+        },
+        "clusterName": {
+            "value": "mjdemo"
+        },
+        "nodeVmSize": {
+            "value": "Standard_D2s_V3"
+        },
+        "osDiskSizeGB": {
+            "value": 50
+        },
+        "nodeCount": {
+            "value": 1
+        },
+        "maxNodeCount": {
+            "value": 3
+        },
+        "nodeAdminUsername": {
+            "value": "aksAdminUser"
+        },
+        "adminGroupObjectIDs": {
+            "value": []
+        },
+        "publicsshKey": {
+            "value": ""
+        },
+        "workspaceTier": {
+            "value": "PerGB2018"
+        },
+        "vnetAddressPrefixes": {
+            "value": []
+        },
+        "subnetAddressPrefix": {
+            "value": ""
+        }
+    }
+}
