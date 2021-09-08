@@ -1,0 +1,138 @@
+trigger: none
+pr: none
+
+pool:
+  vmImage: ubuntu-latest
+
+parameters:
+  - name: azureSubscription
+    type: string
+    default: 'Sandbox'
+  - name: location
+    displayName: 'Resource Location'
+    type: string
+    default: 'uksouth'
+  - name: prefix
+    displayName: 'Environment Prefix'
+    type: string
+    default: 'prod'
+  - name: clusterName
+    displayName: 'Name of the AKS Cluster'
+    type: string
+    default: 'demo'
+  - name: nodeVmSize
+    displayName: 'VM Size for the Nodes'
+    type: string
+    default: 'Standard_D2s_V3'
+    values:
+      - 'Standard_D2s_V3'
+      - 'Standard_DS2_v2'
+      - 'Standard_D4s_V3'
+      - 'Standard_DS3_v2'
+      - 'Standard_DS4_v2'
+      - 'Standard_D8s_v3'
+  - name: osDiskSizeGB
+    displayName: 'Size of OS disk (0 means use vm cache size)'
+    type: number
+    default: 50
+  - name: nodeCount
+    displayName: 'The number of nodes'
+    type: number
+    default: 3
+  - name: maxNodeCount
+    displayName: 'Max node to scale out to'
+    type: number
+    default: 10
+  - name: workspaceTier
+    displayName: Log Analytics Workspace Tier
+    type: string
+    default: 'PerGB2018'
+    values:
+      - 'Free'
+      - 'Standalone'
+      - 'PerNode'
+      - 'PerGB2018'
+      - 'Premium'
+  - name: tags
+    displayName: 'Tags'
+    type: object
+    default:
+     Environment: "prod"
+     Resource: "AKS"
+     Project: "Demo"
+  - name: nodeAdminUsername
+    displayName: 'Admin username for the nodes'
+    type: string
+    default: 'adminUserName'
+  - name: vnetAddressPrefixes
+    displayName: 'Virtual Network Address Prefixes'
+    type: object
+    default: 
+      - '10.240.0.0/16'
+  - name: subnetAddressPrefix
+    displayName: 'Subnet Address Prefix'
+    type: string
+    default: '10.240.0.0/20'
+  - name: adGroupNames
+    type: object
+    default: 
+      - 'demo-group'
+
+variables:
+  resourceGroupName: 'rg-${{ parameters.prefix }}-${{ parameters.clusterName }}-${{ parameters.location }}'
+
+steps:
+- task: DownloadSecureFile@1
+  displayName: 'Download Public SSH Key'
+  name: SSHfile
+  inputs:
+    secureFile: 'aksKey.pub'
+- bash: |
+    value=`cat $(SSHfile.secureFilePath)`
+    echo '##vso[task.setvariable variable=publicsshKey;issecret=true]'$value
+  displayName: Obtain SSH key value  
+- task: AzureCLI@2
+  displayName: 'Get AD Group Object Ids'
+  inputs:
+    azureSubscription: ${{ parameters.azureSubscription }}
+    scriptType: pscore
+    scriptLocation: inlineScript
+    inlineScript: |    
+      $objectIds = '${{ join(',',parameters.adGroupNames) }}'.Split(',') | ForEach { 
+        "$(az ad group list --query "[?displayName == '$_'].{objectId:objectId}" -o tsv)" 
+      }
+
+      $output = ConvertTo-Json -Compress @($objectIds)
+      Write-Host '##vso[task.setvariable variable=groupIds]'$output
+- template: objectparameters.yml
+  parameters:
+    tags: ${{ parameters.tags }}
+    vnetAddressPrefixes: ${{ parameters.vnetAddressPrefixes }}
+- template: parameters.yml
+  parameters:
+    prefix: ${{ parameters.prefix }}
+    clusterName: ${{ parameters.clusterName }}
+    nodeVmSize: ${{ parameters.nodeVmSize }}
+    osDiskSizeGB: ${{ parameters.osDiskSizeGB }}
+    nodeCount: ${{ parameters.nodeCount }}
+    maxNodeCount: ${{ parameters.maxNodeCount }}
+    nodeAdminUsername: ${{ parameters.nodeAdminUsername }}
+    publicsshKey: $(publicsshKey)
+    workspaceTier: ${{ parameters.workspaceTier }}    
+    subnetAddressPrefix: ${{ parameters.subnetAddressPrefix }}
+    adminGroupObjectIDs: $(groupIds)
+- task: FileTransform@2
+  displayName: "Transform Parameters"
+  inputs:
+    folderPath: '$(System.DefaultWorkingDirectory)'
+    xmlTransformationRules: ''
+    jsonTargetFiles: 'deploy.parameters.json'
+- task: AzureCLI@2
+  displayName: 'Deploy AKS Cluster'
+  inputs:
+    azureSubscription: ${{ parameters.azureSubscription }}
+    scriptType: bash
+    scriptLocation: inlineScript
+    inlineScript: |
+      az group create --name "$(resourceGroupName)" --location ${{ parameters.location }} 
+      az deployment group create --name "${{ parameters.clusterName }}-deploy" --resource-group "$(resourceGroupName)" --template-file deploy.bicep --parameters deploy.parameters.json
