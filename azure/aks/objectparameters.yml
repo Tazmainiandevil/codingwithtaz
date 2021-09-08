@@ -1,0 +1,12 @@
+parameters: 
+  - name: tags
+    type: object
+  - name: vnetAddressPrefixes
+    type: object
+
+steps:
+- ${{ each item in parameters }}: 
+  - bash: |
+      value='${{ convertToJson(item.value) }}'
+      echo '##vso[task.setvariable variable=parameters.${{ item.key }}.value]'$value
+    displayName: "Create Variable ${{ item.key }}"
