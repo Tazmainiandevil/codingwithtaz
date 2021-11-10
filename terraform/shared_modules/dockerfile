@@ -1,0 +1,62 @@
+ARG IMAGE_REPO=alpine
+ARG IMAGE_VERSION=3
+ARG TERRAFORM_VERSION
+ARG POWERSHELL_VERSION
+ARG NODE_VERSION=lts-alpine3.14
+
+FROM node:${NODE_VERSION} AS node_base
+RUN echo "NODE Version:" && node --version
+RUN echo "NPM Version:" && npm --version
+
+FROM ${IMAGE_REPO}:${IMAGE_VERSION} AS installer-env
+ARG TERRAFORM_VERSION
+ARG POWERSHELL_VERSION
+ARG POWERSHELL_PACKAGE=powershell-${POWERSHELL_VERSION}-linux-alpine-x64.tar.gz
+ARG POWERSHELL_DOWNLOAD_PACKAGE=powershell.tar.gz
+ARG POWERSHELL_URL=https://github.com/PowerShell/PowerShell/releases/download/v${POWERSHELL_VERSION}/${POWERSHELL_PACKAGE}
+RUN apk upgrade --update && \
+    apk add --no-cache bash wget curl
+
+# Terraform
+RUN wget --quiet https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip && \
+    unzip terraform_${TERRAFORM_VERSION}_linux_amd64.zip && \
+    mv terraform /usr/bin
+    
+# PowerShell Core
+RUN curl -s -L ${POWERSHELL_URL} -o /tmp/${POWERSHELL_DOWNLOAD_PACKAGE}&& \
+    mkdir -p /opt/microsoft/powershell/7 && \
+    tar zxf /tmp/${POWERSHELL_DOWNLOAD_PACKAGE} -C /opt/microsoft/powershell/7 && \
+    chmod +x /opt/microsoft/powershell/7/pwsh 
+
+FROM ${IMAGE_REPO}:${IMAGE_VERSION} 
+ENV NODE_HOME /usr/local/bin/node
+# Copy only the files we need from the previous stages
+COPY --from=installer-env ["/usr/bin/terraform", "/usr/bin/terraform"]
+COPY --from=installer-env ["/opt/microsoft/powershell/7", "/opt/microsoft/powershell/7"]
+RUN ln -s /opt/microsoft/powershell/7/pwsh /usr/bin/pwsh
+COPY --from=node_base ["${NODE_HOME}", "${NODE_HOME}"]
+
+# Copy over Modules
+RUN mkdir modules
+COPY modules modules
+
+LABEL maintainer="Coding With Taz"
+LABEL "com.azure.dev.pipelines.agent.handler.node.path"="${NODE_HOME}"
+
+ENV APK_DEV "gcc libffi-dev musl-dev openssl-dev python3-dev make"
+ENV APK_ADD "bash sudo shadow curl py3-pip graphviz git"
+ENV APK_POWERSHELL="ca-certificates less ncurses-terminfo-base krb5-libs libgcc libintl libssl1.1 libstdc++ tzdata userspace-rcu zlib icu-libs"
+# Install additional packages
+RUN apk upgrade --update && \
+    apk add --no-cache --virtual .pipeline-deps readline linux-pam && \
+    apk add --no-cache --virtual .build ${APK_DEV} && \
+    apk add --no-cache ${APK_ADD} ${APK_POWERSHELL} && \
+    # Install Azure CLI
+    pip --no-cache-dir install --upgrade pip && \
+    pip --no-cache-dir install wheel && \
+    pip --no-cache-dir install azure-cli && \
+    apk del .build && \
+    apk del .pipeline-deps 
+
+RUN echo "PS1='\n\[\033[01;35m\][\[\033[0m\]Terraform\[\033[01;35m\]]\[\033[0m\]\n\[\033[01;35m\][\[\033[0m\]\[\033[01;32m\]\w\[\033[0m\]\[\033[01;35m\]]\[\033[0m\]\n \[\033[01;33m\]->\[\033[0m\] '" >> ~/.bashrc 
+CMD tail -f /dev/null

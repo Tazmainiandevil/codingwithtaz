@@ -1,0 +1,45 @@
+trigger: 
+    - main
+
+pr: none
+
+name: $(terraformVersion)_$(Date:yyyyMMdd)$(Rev:.r)
+
+variables:
+ dockerFilePath: dockerfile
+ imageRepository: iac/terraform
+ terraformVersion: 1.0.10
+ powershellVersion: 7.1.5
+
+pool:
+  vmImage: "ubuntu-latest"
+
+steps:
+  - task: Docker@2
+    displayName: "Build Terraform Image"
+    inputs:
+      containerRegistry: '$(containerRegistryConnection)'
+      repository: '$(imageRepository)'
+      command: 'build'
+      Dockerfile: '$(dockerfilePath)'
+      arguments: '--build-arg TERRAFORM_VERSION="$(terraformVersion)" --build-arg POWERSHELL_VERSION="$(powershellVersion)"'
+      tags: | 
+        $(Build.BuildNumber)
+  - task: SnykSecurityScan@1
+    inputs:
+      serviceConnectionEndpoint: 'Snyk'
+      testType: 'container'
+      dockerImageName: '$(containerRegistry)/$(imageRepository):$(Build.BuildNumber)'
+      dockerfilePath: '$(dockerfilePath)'
+      monitorWhen: 'always'
+      severityThreshold: 'high'
+      failOnIssues: true
+  - task: Docker@2
+    displayName: "Build and Push Terraform Image"
+    inputs:
+      containerRegistry: '$(containerRegistryConnection)'
+      repository: '$(imageRepository)'
+      command: 'Push'
+      Dockerfile: '$(dockerfilePath)'
+      tags: | 
+        $(Build.BuildNumber)

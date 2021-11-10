@@ -1,0 +1,17 @@
+parameters:
+  - name: env
+    type: string
+  - name: location
+    type: string
+  - name: appName
+    type: string
+  - name: tags
+    type: object
+
+steps:
+- ${{ each item in parameters }}:
+     - script: echo '${{ item.key }}=${{ replace(convertToJson(item.value), ':', '=')}}' >> parameters.auto.tfvars
+       displayName: "JsonVar ${{ item.key }}"
+- bash: |
+    cat parameters.auto.tfvars
+  displayName: "Debug show new file"

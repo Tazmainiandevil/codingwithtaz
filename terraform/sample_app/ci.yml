@@ -1,0 +1,89 @@
+trigger:
+   - main
+ 
+pr: none
+
+parameters:
+  - name: env
+    displayName: 'Environment'
+    type: string
+    default: 'dev'
+    values:
+      - dev
+      - test
+      - prod
+  - name: location
+    displayName: 'Resource Location'
+    type: string
+    default: 'uksouth'
+  - name: appName
+    displayName: 'Application Name'
+    type: string
+    default: 'myapp'
+  - name: tags 
+    displayName: 'Tags'
+    type: object 
+    default: 
+     Environment: "dev"
+     Project: "Demo"
+
+variables:
+  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
+  location: 'uksouth'
+  terraformGroup: 'rg-dev-terraform-uksouth'
+  terraformStorageName: 'devterraformuksouth2329'
+  terraformStorageSku: 'Standard_LRS'
+  terraformContainerName: 'infrastructure'
+  terraformStateFilename: 'deploy.tfstate'
+  
+jobs:
+- job: infrastructure
+  displayName: 'Build Infrastructure'
+  pool:
+    vmImage: ubuntu-latest
+  container:
+    image: $(containerRegistry)/iac/terraform:1.0.10_20211108.1
+    endpoint: 'ACR Connection'
+  steps:
+  - task: AzureCLI@2
+    displayName: 'Create/Update State File Storage'
+    inputs:
+        azureSubscription: '$(subscription)'
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          az group create --location $(location) --name $(terraformGroup)
+          az storage account create --name $(terraformStorageName) --resource-group $(terraformGroup) --location $(location) --sku $(terraformStorageSku) --min-tls-version TLS1_2 --https-only true --allow-blob-public-access false
+          az storage container create --name $(terraformContainerName) --account-name $(terraformStorageName)
+        addSpnToEnvironment: false
+
+  - bash: |
+      sed -i 's/backend "local" {}/backend "azurerm" {}/g' main.tf
+      cat main.tf
+    displayName: 'Update Backend in terraform file'
+  - template: 'autovars.yml'
+    parameters:
+      env: ${{ parameters.env }}
+      location: ${{ parameters.location }}
+      appName: ${{ parameters.appName }}
+      tags: ${{ parameters.tags }}
+  - task: TerraformTaskV2@2
+    displayName: 'Terraform Init'
+    inputs:
+      backendServiceArm: '$(subscription)'
+      backendAzureRmResourceGroupName: '$(terraformGroup)'
+      backendAzureRmStorageAccountName: '$(terraformStorageName)'
+      backendAzureRmContainerName: '$(terraformContainerName)'
+      backendAzureRmKey: '$(terraformStateFilename)'
+  - task: TerraformTaskV2@2
+    displayName: 'Terraform Plan'
+    inputs:
+      command: plan
+      commandOptions: '-out=tfplan'
+      environmentServiceNameAzureRM: '$(subscription)'
+  - task: TerraformTaskV2@2
+    displayName: 'Terraform Apply'
+    inputs:
+      command: apply
+      commandOptions: '-auto-approve tfplan'
+      environmentServiceNameAzureRM: '$(subscription)'
