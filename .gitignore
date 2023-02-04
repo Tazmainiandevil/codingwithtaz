@@ -1,0 +1,6 @@
+﻿# Terraform
+*.tfstate
+*.tfstate*
+.terraform*
+
+.dccache
